@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colony Counter</title>
+</head>
+<body>
+    <h1>Colony Counter</h1>
+    <form id="upload-form" enctype="multipart/form-data">
+        <input type="file" name="images" id="images" accept="image/*" multiple required>
+        <button type="submit">Count Colonies</button>
+    </form>
+    <div id="results"></div>
+    <script>
+        const form = document.getElementById('upload-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            const files = document.getElementById('images').files;
+            for (let file of files) {
+                formData.append('images', file);
+            }
+
+            const response = await fetch('/count_colonies', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '';
+
+                // 결과 표시
+                result.colony_counts.forEach((countData, index) => {
+                    const originalUrl = `/get_image/${result.images[index].original}`;
+                    const resultUrl = `/get_image/${result.images[index].result}`;
+
+                    const section = document.createElement('section');
+                    section.innerHTML = `
+                        <h3>${countData.filename}</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <div>
+                                <img src="${originalUrl}" alt="Original Image" style="max-width: 300px;">
+                                <p>Original</p>
+                            </div>
+                            <div>
+                                <img src="${resultUrl}" alt="Processed Image" style="max-width: 300px;">
+                                <p>Processed</p>
+                            </div>
+                        </div>
+                        <table border="1" style="margin-top: 10px;">
+                            <tr><th>Type</th><th>Count</th></tr>
+                            <tr><td>Fluorescent Colonies</td><td>${countData.fluorescent_count}</td></tr>
+                            <tr><td>Non-Fluorescent Colonies</td><td>${countData.non_fluorescent_count}</td></tr>
+                        </table>
+                    `;
+                    resultsDiv.appendChild(section);
+                });
+            } else {
+                document.getElementById('results').innerText = "Error counting colonies";
+            }
+        });
+    </script>
+</body>
+</html>
